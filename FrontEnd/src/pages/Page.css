@@ -1,0 +1,22 @@
+.page-content {
+    padding: 1rem;
+}
+
+.page-content button {
+    margin-top: 3px; /* Add margin to move buttons down */
+}
+
+.page-content input,
+.page-content textarea {
+    margin-bottom: 3px; /* Add margin to create space between input fields */
+    margin-left: 5px; /* Add margin to move input boxes to the right */
+}
+
+.page-content textarea {
+    width: 100%;
+    height: 100px;
+}
+
+.page-content form div {
+    margin-bottom: 10px; /* Add margin to create space between form elements */
+}
