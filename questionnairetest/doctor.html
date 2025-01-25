@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor's Dashboard</title>
+    <style>
+        .critical {
+            background-color: red;
+            color: white;
+        }
+        .bad {
+            background-color: orange;
+            color: white;
+        }
+        .stable {
+            background-color: green;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Doctor's Patient Monitoring Dashboard</h1>
+    <div id="patientData"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        // Listen for updated patient data from server
+        socket.on('updatePatientData', (patientsData) => {
+            const patientDataDiv = document.getElementById('patientData');
+            patientDataDiv.innerHTML = ''; // Clear previous data
+
+            // Loop through the patients and display their status
+            for (const patientId in patientsData) {
+                const patient = patientsData[patientId];
+                const patientDiv = document.createElement('div');
+
+                // Set the background color based on health condition
+                let patientClass = 'stable';
+                if (patient.healthCondition === 'Critical' || patient.painLevel >= 7 || patient.breathing === 'Severe') {
+                    patientClass = 'critical';
+                } else if (patient.healthCondition === 'Bad' || patient.painLevel >= 5 || patient.breathing === 'Moderate') {
+                    patientClass = 'bad';
+                }
+
+                patientDiv.classList.add(patientClass);
+                patientDiv.innerHTML = `
+                    <strong>Patient ID: ${patientId}</strong><br>
+                    Health Condition: ${patient.healthCondition}<br>
+                    Pain Level: ${patient.painLevel}<br>
+                    Breathing: ${patient.breathing}<br>
+                `;
+                patientDataDiv.appendChild(patientDiv);
+            }
+        });
+    </script>
+</body>
+</html>

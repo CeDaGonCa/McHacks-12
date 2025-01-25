@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Monitoring</title>
+</head>
+<body>
+    <h1>Health Monitoring</h1>
+    <p>We will ask you about your health condition every 5 minutes.</p>
+
+    <div id="questionnaire">
+        <label for="healthCondition">How do you feel right now?</label>
+        <select id="healthCondition" name="healthCondition">
+            <option value="Good">Good</option>
+            <option value="Fair">Fair</option>
+            <option value="Bad">Bad</option>
+            <option value="Critical">Critical</option>
+        </select>
+
+        <label for="painLevel">Pain Level (0-10):</label>
+        <input type="number" id="painLevel" name="painLevel" min="0" max="10">
+
+        <label for="breathing">Breathing Difficulty:</label>
+        <select id="breathing" name="breathing">
+            <option value="None">None</option>
+            <option value="Mild">Mild</option>
+            <option value="Moderate">Moderate</option>
+            <option value="Severe">Severe</option>
+        </select>
+
+        <button onclick="submitData()">Submit</button>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        function submitData() {
+            const healthCondition = document.getElementById('healthCondition').value;
+            const painLevel = document.getElementById('painLevel').value;
+            const breathing = document.getElementById('breathing').value;
+
+            const healthData = {
+                patientId: 'patient123', // Example, this should be dynamically set
+                healthCondition,
+                painLevel,
+                breathing
+            };
+
+            // Emit data to the server
+            socket.emit('patientData', healthData);
+        }
+
+        // Trigger submitData every 5 minutes (for simulation)
+        setInterval(submitData, 300000); // 300000ms = 5 minutes
+    </script>
+</body>
+</html>
