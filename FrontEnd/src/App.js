@@ -1,32 +1,32 @@
-import './App.css';
-import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import Navbar from './components/Navbar';
-import Home from './pages/Home';
-import Assistance from './pages/Assistance'; // Import the Assistance page
-import Contact from './pages/Contact'; // Import the Contact page
-import Games from './pages/Games'; // Import the Games page
-import PatientInfo from './pages/PatientInfo'; // Import the PatientInfo page
-import NurseDashboard from './pages/NurseDashboard'; // Import the NurseDashboard page
-// ...import other pages...
+import React from "react";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import Navbar from "./components/Navbar";
+import Home from "./pages/Home";
+import Assistance from "./pages/Assistance";
+import Contact from "./pages/Contact";
+import Games from "./pages/Games";
+import PatientInfo from "./pages/PatientInfo";
+import NurseDashboard from "./pages/NurseDashboard";
+import MemoryMatchGame from "./pages/MemoryMatchGame"; // Import the Memory Match Game
+import BreathingExerciseGame from "./pages/BreathingExerciseGame"; // Import the Breathing Exercise Game
 
 function App() {
-    return (
-        <Router>
-            <Navbar />
-            <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/assistance" element={<Assistance />} /> {/* Added route for Assistance page */}
-                <Route path="/games" element={<Games />} /> {/* Added route for Games page */}
-                <Route path="/contact" element={<Contact />} /> {/* Added route for Contact page */}
-                <Route path="/patient-info" element={<PatientInfo />} /> {/* Added route for PatientInfo page */}
-                <Route path="/nurse-dashboard" element={<NurseDashboard />} /> {/* Added route for NurseDashboard page */}
-                {/* Add routes for other pages */}
-                {/* <Route path="/about" element={<About />} /> */}
-                {/* <Route path="/contact" element={<Contact />} /> */}
-            </Routes>
-        </Router>
-    );
+  return (
+    <Router>
+      <Navbar />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/assistance" element={<Assistance />} />
+        <Route path="/games" element={<Games />} />
+        <Route path="/games/memory-match" element={<MemoryMatchGame />} /> {/* Route for Memory Match Game */}
+        <Route path="/games/breathing" element={<BreathingExerciseGame />} /> {/* Route for Breathing Exercise Game */}
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/patient-info" element={<PatientInfo />} />
+        <Route path="/nurse-dashboard" element={<NurseDashboard />} />
+        {/* Add routes for other pages as needed */}
+      </Routes>
+    </Router>
+  );
 }
 
 export default App;
