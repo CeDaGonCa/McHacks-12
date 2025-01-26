@@ -6,9 +6,11 @@ import Assistance from "./pages/Assistance";
 import Contact from "./pages/Contact";
 import Games from "./pages/Games";
 import PatientInfo from "./pages/PatientInfo";
-import NurseDashboard from "./pages/NurseDashboard";
+import MedicalDashboard from "./pages/MedicalDashboard";
 import BreathingGame from './components/games/BreathingGame';
 import MemoryMatch from './components/games/MemoryMatch';
+import MedicalLogin from "./pages/MedicalLogin";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
   return (
@@ -22,8 +24,15 @@ function App() {
         <Route path="/games/memory-match" element={<MemoryMatch />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/patient-info" element={<PatientInfo />} />
-        <Route path="/nurse-dashboard" element={<NurseDashboard />} />
-        {/* Add routes for other pages as needed */}
+        <Route path="/medical-login" element={<MedicalLogin />} />
+        <Route 
+          path="/medical-dashboard" 
+          element={
+            <ProtectedRoute>
+              <MedicalDashboard />
+            </ProtectedRoute>
+          } 
+        />
       </Routes>
     </Router>
   );

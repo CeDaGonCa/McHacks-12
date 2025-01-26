@@ -3,25 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import './Page.css'; // Import the CSS file for page styling
 
 const Home = () => {
-    const [name, setName] = useState('');
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
+    const [patientName, setPatientName] = useState('');
     const navigate = useNavigate();
 
-    const handleEnterName = (e) => {
+    const handlePatientSubmit = (e) => {
         e.preventDefault();
-        // Navigate to the PatientInfo page with the entered name
-        navigate('/patient-info', { state: { name } });
-    };
-
-    const handleLogin = (e) => {
-        e.preventDefault();
-        // Check if the entered username and password are correct
-        if (username === 'username' && password === 'password') {
-            // Navigate to the NurseDashboard page
-            navigate('/nurse-dashboard');
-        } else {
-            console.log('Invalid username or password');
+        if (patientName.trim()) {
+            navigate('/patient-info', { state: { name: patientName } });
         }
     };
 
@@ -29,40 +17,25 @@ const Home = () => {
         <div className="page-content">
             <h1>Welcome to the Home Page</h1>
             <p>Please enter your name to see wait times and further information about your emergency room visit.</p>
-            
-            <h2>For Patients</h2>
-            <form onSubmit={handleEnterName}>
-                <div>
-                    <label>Name:</label>
-                    <input
-                        type="text"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                    />
-                </div>
-                <button type="submit">Enter Name</button>
-            </form>
 
-            <h2>For Nurses</h2>
-            <form onSubmit={handleLogin}>
-                <div>
-                    <label>Username:</label>
-                    <input
-                        type="text"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                    />
-                </div>
-                <div>
-                    <label>Password:</label>
-                    <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                    />
-                </div>
-                <button type="submit">Login</button>
-            </form>
+            <div className="patient-section">
+                <h2>For Patients</h2>
+                <form onSubmit={handlePatientSubmit}>
+                    <div className="form-group">
+                        <label>Name:</label>
+                        <input
+                            type="text"
+                            value={patientName}
+                            onChange={(e) => setPatientName(e.target.value)}
+                            placeholder="Enter Name"
+                            required
+                        />
+                    </div>
+                    <button type="submit" className="submit-button">
+                        Enter Queue
+                    </button>
+                </form>
+            </div>
         </div>
     );
 };

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import './Page.css'; // Import the CSS file for page styling
+import './PatientInfo.css';
 
 const PatientInfo = () => {
     const location = useLocation();
@@ -28,8 +29,60 @@ const PatientInfo = () => {
         
         socket.onmessage = (event) => {
             const data = JSON.parse(event.data);
-            setQueueInfo(data);
-            setTotalPatients(data.totalPatients || 10); // fallback to 10 if not provided
+            // Update queue info with null checks
+            const initial = data.initial || [];
+            const testResults = data.testResults || [];
+            const additionalTests = data.additionalTests || [];
+            
+            // Combine all patients and sort by severity (5 is highest priority, 1 is lowest)
+            const allPatients = [...initial, ...testResults, ...additionalTests]
+                .sort((a, b) => {
+                    // First sort by severity (descending)
+                    const severityDiff = (b.severityLevel || 0) - (a.severityLevel || 0);
+                    if (severityDiff !== 0) return severityDiff;
+                    
+                    // If severity is equal, sort by arrival time (ascending)
+                    return (a.arrivalTime || 0) - (b.arrivalTime || 0);
+                });
+
+            // Reassign positions based on sorted order
+            allPatients.forEach((patient, index) => {
+                patient.position = index + 1;
+            });
+            
+            // Find current patient in sorted queue
+            const patientInQueue = allPatients.find(p => p.name === name || p.patientName === name);
+            
+            if (patientInQueue) {
+                setQueueInfo({
+                    position: patientInQueue.position,
+                    waitTime: calculateWaitTime(patientInQueue.position, patientInQueue.severityLevel),
+                    severityLevel: patientInQueue.severityLevel,
+                    patientsAhead: patientInQueue.position - 1
+                });
+                
+                // Update lab tests if they exist
+                if (patientInQueue.labTests) {
+                    setLabTests(patientInQueue.labTests);
+                }
+            }
+        };
+
+        // Helper function to calculate estimated wait time based on position and severity
+        const calculateWaitTime = (position, severity) => {
+            // Base wait time per patient
+            const baseWaitTime = 15; // 15 minutes per patient
+            
+            // Adjust wait time based on severity
+            const severityMultiplier = {
+                5: 0.5,  // Emergency cases get priority (50% less wait)
+                4: 0.7,  // Urgent cases (30% less wait)
+                3: 1.0,  // Standard wait time
+                2: 1.2,  // Non-urgent (20% longer wait)
+                1: 1.5   // Minor issues (50% longer wait)
+            };
+            
+            return Math.round(position * baseWaitTime * (severityMultiplier[severity] || 1));
         };
 
         // Initial fetch of queue information
@@ -55,14 +108,22 @@ const PatientInfo = () => {
         const fetchLabTests = async () => {
             try {
                 const response = await fetch(`http://localhost:3001/api/lab-tests/${name}`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch lab tests');
+                }
                 const data = await response.json();
+                console.log('Fetched lab tests:', data); // For debugging
                 setLabTests(data);
             } catch (error) {
                 console.error('Error fetching lab tests:', error);
             }
         };
 
+        // Set up polling for lab tests updates
         fetchLabTests();
+        const interval = setInterval(fetchLabTests, 5000); // Poll every 5 seconds
+
+        return () => clearInterval(interval);
     }, [name]);
 
     useEffect(() => {
@@ -105,7 +166,7 @@ const PatientInfo = () => {
             <h1>Patient Information</h1>
             <p>Welcome, {name}</p>
             
-            <div className="queue-info">
+            <div className="queue-status-container">
                 <h2>Your Queue Status</h2>
                 {queueInfo.position && (
                     <p>Your Position in Queue: {queueInfo.position}</p>
@@ -113,10 +174,14 @@ const PatientInfo = () => {
                 {queueInfo.waitTime && (
                     <p>Estimated Wait Time: {queueInfo.waitTime} minutes</p>
                 )}
-                <div className="queue-progress">
+                <div className="progress-bar-container">
                     <div 
-                        className="queue-progress-bar" 
-                        style={{ width: `${(1 - queueInfo.position/totalPatients) * 100}%` }}
+                        className="progress-bar" 
+                        style={{
+                            width: `${Math.max(0, 100 - (queueInfo.position * 25))}%`,
+                            backgroundColor: '#4285f4',
+                            transition: 'width 1s ease-in-out'
+                        }}
                     />
                 </div>
             </div>
@@ -157,18 +222,26 @@ const PatientInfo = () => {
                 )}
             </div>
 
-            <h2>Lab Tests</h2>
-            {labTests.length > 0 ? (
-                <ul>
-                    {labTests.map(test => (
-                        <li key={test.id}>
-                            {test.name}: {test.status}
-                        </li>
-                    ))}
-                </ul>
-            ) : (
-                <p>No lab tests available.</p>
-            )}
+            <div className="lab-tests-section">
+                <h2>Lab Tests</h2>
+                {labTests.length > 0 ? (
+                    <ul className="lab-tests-list">
+                        {labTests.map((test, index) => (
+                            <li key={index} className={`lab-test-item ${test.status}`}>
+                                <div className="test-name">{test.name}</div>
+                                <div className="test-status">{test.status}</div>
+                                {test.result && <div className="test-result">{test.result}</div>}
+                                <div className="test-date">
+                                    {new Date(test.timestamp).toLocaleDateString()}
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                ) : (
+                    <p>No lab tests ordered</p>
+                )}
+            </div>
+
             <h2>Submit Your Symptoms</h2>
             <form onSubmit={handleSymptomSubmit}>
                 <div>

@@ -14,6 +14,9 @@ const Navbar = () => {
                 {/* <li><Link to="/services">Services</Link></li> */} {/* Removed Services link */}
                 <li><Link to="/games">Games</Link></li> {/* Added Games link */}
                 <li><Link to="/contact">Contact</Link></li>
+                <li>
+                    <Link to="/medical-login">Medical Staff</Link>
+                </li>
             </ul>
         </nav>
     );

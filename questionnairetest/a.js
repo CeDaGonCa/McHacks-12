@@ -8,8 +8,16 @@ const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
 let patientsData = {}; // Store patient health data (patientId -> data)
+const patientLabTests = new Map(); // Store lab tests for each patient
 
-app.use(cors()); // Allow all origins
+// Update CORS configuration
+app.use(cors({
+    origin: true,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json());
 
 // Serve the static files (HTML, CSS, JS) for the doctor and patient
@@ -58,7 +66,7 @@ class PriorityQueue {
         this.patients.forEach((patient, index) => {
             patient.position = index + 1;
             patient.estimatedWaitTime = accumulatedTime;
-            accumulatedTime += this.getProcessingTime(patient);
+            accumulatedTime += patient.estimatedVisitDuration;
         });
     }
 
@@ -95,7 +103,19 @@ app.post('/api/patient/:id/tests', (req, res) => {
     record.tests.push(...tests);
     if (doctorNotes) record.notes.push(doctorNotes);
     
-    // Move patient to appropriate queue based on test results
+    // Update lab tests status
+    if (patientLabTests.has(id)) {
+        const labTests = patientLabTests.get(id);
+        tests.forEach(newTest => {
+            const existingTest = labTests.find(t => t.name === newTest.type);
+            if (existingTest) {
+                existingTest.status = newTest.status;
+                existingTest.result = newTest.result;
+            }
+        });
+    }
+    
+    // Move patient to appropriate queue
     const patient = initialQueue.patients.find(p => p.id === id);
     if (patient) {
         initialQueue.patients = initialQueue.patients.filter(p => p.id !== id);
@@ -142,15 +162,55 @@ app.get('/api/queue', (req, res) => {
     }
     
     queue.updateWaitTimes();
-    res.json({ patients: queue.patients });
+    const patientsWithLabTests = queue.patients.map(patient => ({
+        ...patient,
+        labTests: patientLabTests.get(patient.id) || []
+    }));
+    
+    res.json({ patients: patientsWithLabTests });
 });
 
-// Broadcast updates for all queues
+// In your API endpoint for adding patients
+app.post('/api/queue', (req, res) => {
+    const { patientName, severityLevel, estimatedVisitDuration, labTests, ...patientInfo } = req.body;
+    
+    const patient = {
+        id: Date.now().toString(),
+        name: patientName,
+        patientName,
+        severityLevel,
+        estimatedVisitDuration,
+        arrivalTime: Date.now(),
+        ...patientInfo
+    };
+
+    // Store lab tests separately
+    if (labTests && labTests.length > 0) {
+        patientLabTests.set(patient.id, labTests);
+    }
+
+    initialQueue.enqueue(patient);
+    broadcastQueues();
+    res.status(201).json(patient);
+});
+
+// Update the broadcast function to include lab tests
 const broadcastQueues = () => {
+    initialQueue.updateWaitTimes();
     const queueData = {
-        initial: initialQueue.patients,
-        testResults: testResultsQueue.patients,
-        additionalTests: additionalTestsQueue.patients
+        initial: initialQueue.patients.map(patient => ({
+            ...patient,
+            name: patient.name || patient.patientName,
+            labTests: patientLabTests.get(patient.id) || []
+        })),
+        testResults: testResultsQueue.patients.map(patient => ({
+            ...patient,
+            labTests: patientLabTests.get(patient.id) || []
+        })),
+        additionalTests: additionalTestsQueue.patients.map(patient => ({
+            ...patient,
+            labTests: patientLabTests.get(patient.id) || []
+        }))
     };
     
     wss.clients.forEach(client => {
@@ -168,6 +228,40 @@ wss.on('connection', (ws) => {
     ws.on('close', () => {
         console.log('Client disconnected');
     });
+});
+
+// Simplify the login endpoint for testing
+app.post('/api/medical/login', (req, res) => {
+    const { username, password } = req.body;
+    
+    // Hardcoded check for username/password
+    if (username === 'username' && password === 'password') {
+        res.json({
+            success: true,
+            token: 'test-token',
+            role: 'nurse'
+        });
+    } else {
+        res.status(401).json({
+            success: false,
+            error: 'Invalid username or password'
+        });
+    }
+});
+
+// Add endpoint to fetch lab tests for a specific patient
+app.get('/api/lab-tests/:patientName', (req, res) => {
+    const { patientName } = req.params;
+    
+    // Find patient in any queue
+    const patient = [...initialQueue.patients, ...testResultsQueue.patients]
+        .find(p => p.name === patientName || p.patientName === patientName);
+
+    if (patient && patientLabTests.has(patient.id)) {
+        res.json(patientLabTests.get(patient.id));
+    } else {
+        res.json([]);
+    }
 });
 
 server.listen(3001, () => {

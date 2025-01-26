@@ -2,10 +2,6 @@ import React, { useState, useEffect } from 'react';
 import './Page.css'; // Import the CSS file for page styling
 
 const NurseDashboard = () => {
-    const [patientName, setPatientName] = useState('');
-    const [severityLevel, setSeverityLevel] = useState(3); // Default to middle severity
-    const [estimatedVisitDuration, setEstimatedVisitDuration] = useState(30); // Default 30 mins
-    const [queuedPatients, setQueuedPatients] = useState([]);
     const [patientInfo, setPatientInfo] = useState({
         name: '',
         age: '',
@@ -13,8 +9,11 @@ const NurseDashboard = () => {
         email: '',
         emergencyContact: '',
         labTests: [],
-        additionalNotes: ''
     });
+    const [currentLabTest, setCurrentLabTest] = useState('');
+    const [severityLevel, setSeverityLevel] = useState(3);
+    const [estimatedVisitDuration, setEstimatedVisitDuration] = useState(30);
+    const [queuedPatients, setQueuedPatients] = useState([]);
 
     useEffect(() => {
         // Fetch current queue on component mount
@@ -49,9 +48,11 @@ const NurseDashboard = () => {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    ...patientInfo,
+                    patientName: patientInfo.name,
                     severityLevel,
-                    estimatedVisitDuration
+                    estimatedVisitDuration,
+                    labTests: patientInfo.labTests,
+                    ...patientInfo
                 }),
             });
             
@@ -64,7 +65,6 @@ const NurseDashboard = () => {
                     email: '',
                     emergencyContact: '',
                     labTests: [],
-                    additionalNotes: ''
                 });
                 setSeverityLevel(3);
                 setEstimatedVisitDuration(30);
@@ -75,8 +75,29 @@ const NurseDashboard = () => {
         }
     };
 
+    const handleAddLabTest = () => {
+        if (currentLabTest.trim()) {
+            setPatientInfo(prev => ({
+                ...prev,
+                labTests: [...prev.labTests, {
+                    name: currentLabTest.trim(),
+                    status: 'pending',
+                    timestamp: new Date().toISOString()
+                }]
+            }));
+            setCurrentLabTest('');
+        }
+    };
+
+    const handleRemoveLabTest = (index) => {
+        setPatientInfo(prev => ({
+            ...prev,
+            labTests: prev.labTests.filter((_, i) => i !== index)
+        }));
+    };
+
     return (
-        <div className="page-content">
+        <>
             <h1>Nurse Dashboard</h1>
             
             <form onSubmit={handleSubmit}>
@@ -124,12 +145,33 @@ const NurseDashboard = () => {
                             onChange={(e) => setPatientInfo({...patientInfo, emergencyContact: e.target.value})}
                         />
                     </div>
-                    <div>
-                        <label>Additional Notes:</label>
-                        <textarea
-                            value={patientInfo.additionalNotes}
-                            onChange={(e) => setPatientInfo({...patientInfo, additionalNotes: e.target.value})}
-                        />
+                    <div className="lab-tests-section">
+                        <label>Lab Tests:</label>
+                        <div className="lab-tests-input">
+                            <input
+                                type="text"
+                                value={currentLabTest}
+                                onChange={(e) => setCurrentLabTest(e.target.value)}
+                                placeholder="Enter lab test"
+                            />
+                            <button type="button" onClick={handleAddLabTest}>Add Test</button>
+                        </div>
+                        {patientInfo.labTests.length > 0 && (
+                            <ul className="lab-tests-list">
+                                {patientInfo.labTests.map((test, index) => (
+                                    <li key={index}>
+                                        {test.name}
+                                        <button 
+                                            type="button" 
+                                            onClick={() => handleRemoveLabTest(index)}
+                                            className="remove-test"
+                                        >
+                                            ×
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
                     </div>
                 </div>
                 <div>
@@ -151,8 +193,9 @@ const NurseDashboard = () => {
                         type="number"
                         value={estimatedVisitDuration}
                         onChange={(e) => setEstimatedVisitDuration(Number(e.target.value))}
-                        min="5"
+                        min="1"
                         max="180"
+                        step="1"
                     />
                 </div>
                 <button type="submit">Add to Queue</button>
@@ -162,14 +205,26 @@ const NurseDashboard = () => {
             <div className="queue-list">
                 {queuedPatients.map((patient, index) => (
                     <div key={patient.id} className={`patient-card severity-${patient.severityLevel}`}>
-                        <p>Name: {patient.name}</p>
+                        <p>Name: {patient.name || patient.patientName}</p>
                         <p>Severity: {patient.severityLevel}</p>
                         <p>Wait Time: {patient.estimatedWaitTime} minutes</p>
                         <p>Queue Position: {index + 1}</p>
+                        {patient.labTests && patient.labTests.length > 0 && (
+                            <div className="patient-lab-tests">
+                                <p>Lab Tests:</p>
+                                <ul>
+                                    {patient.labTests.map((test, testIndex) => (
+                                        <li key={testIndex}>
+                                            {test.name} - {test.status}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>
-        </div>
+        </>
     );
 };
 

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import NurseDashboard from './NurseDashboard';
 import './Page.css';
 
-const DoctorDashboard = () => {
+const MedicalDashboard = () => {
+    const [activeRole, setActiveRole] = useState('nurse');
     const [selectedPatient, setSelectedPatient] = useState(null);
     const [queues, setQueues] = useState({
         initial: [],
@@ -13,6 +15,8 @@ const DoctorDashboard = () => {
     const [dischargeNotes, setDischargeNotes] = useState('');
 
     useEffect(() => {
+        if (activeRole !== 'doctor') return;
+
         // Set up WebSocket connection for real-time updates
         const socket = new WebSocket('ws://localhost:3001');
         
@@ -38,7 +42,7 @@ const DoctorDashboard = () => {
                 socket.close();
             }
         };
-    }, []);
+    }, [activeRole]);
 
     const fetchQueues = async () => {
         try {
@@ -116,7 +120,7 @@ const DoctorDashboard = () => {
         }
     };
 
-    return (
+    const renderDoctorDashboard = () => (
         <>
             <h1>Doctor Dashboard</h1>
             
@@ -201,6 +205,39 @@ const DoctorDashboard = () => {
             )}
         </>
     );
+
+    return (
+        <div className="page-content">
+            <div className="dashboard-toggle">
+                <button 
+                    className={`toggle-btn ${activeRole === 'nurse' ? 'active' : ''}`}
+                    onClick={() => {
+                        setActiveRole('nurse');
+                        setSelectedPatient(null);
+                    }}
+                >
+                    Nurse Dashboard
+                </button>
+                <button 
+                    className={`toggle-btn ${activeRole === 'doctor' ? 'active' : ''}`}
+                    onClick={() => {
+                        setActiveRole('doctor');
+                        setSelectedPatient(null);
+                    }}
+                >
+                    Doctor Dashboard
+                </button>
+            </div>
+
+            <div className="dashboard-content">
+                {activeRole === 'nurse' ? (
+                    <NurseDashboard />
+                ) : (
+                    renderDoctorDashboard()
+                )}
+            </div>
+        </div>
+    );
 };
 
-export default DoctorDashboard; 
+export default MedicalDashboard; 
