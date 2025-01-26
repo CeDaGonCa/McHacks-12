@@ -5,37 +5,57 @@ import './Page.css'; // Import the CSS file for page styling
 const PatientInfo = () => {
     const location = useLocation();
     const { name } = location.state || { name: 'Unknown' };
-    const [waitTime, setWaitTime] = useState(null);
-    const [patientsAhead, setPatientsAhead] = useState(null);
+    const [queueInfo, setQueueInfo] = useState({
+        position: null,
+        waitTime: null,
+        severityLevel: null,
+        patientsAhead: null
+    });
     const [labTests, setLabTests] = useState([]);
     const [symptoms, setSymptoms] = useState('');
     const [submittedSymptoms, setSubmittedSymptoms] = useState('');
 
     useEffect(() => {
-        // Fetch wait time, patients ahead, and lab tests from the backend
-        // For now, we'll simulate fetching this information
-        const fetchPatientInfo = async () => {
-            // Simulate a backend call
-            const response = await new Promise((resolve) => {
-                setTimeout(() => {
-                    resolve({
-                        waitTime: 30,
-                        patientsAhead: 5,
-                        labTests: [
-                            { id: 1, name: 'Blood Test', status: 'Completed' },
-                            { id: 2, name: 'X-Ray', status: 'Pending' }
-                        ]
-                    });
-                }, 1000);
-            });
-
-            setWaitTime(response.waitTime);
-            setPatientsAhead(response.patientsAhead);
-            setLabTests(response.labTests);
+        // Set up WebSocket connection to receive real-time updates
+        const socket = new WebSocket('ws://localhost:3001');
+        
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            setQueueInfo(data);
         };
 
-        fetchPatientInfo();
-    }, []);
+        // Initial fetch of queue information
+        const fetchQueueInfo = async () => {
+            try {
+                const response = await fetch(`http://localhost:3001/api/queue/${name}`);
+                const data = await response.json();
+                setQueueInfo(data);
+            } catch (error) {
+                console.error('Error fetching queue info:', error);
+            }
+        };
+
+        fetchQueueInfo();
+
+        return () => {
+            socket.close();
+        };
+    }, [name]);
+
+    useEffect(() => {
+        // Fetch lab tests from the backend
+        const fetchLabTests = async () => {
+            try {
+                const response = await fetch(`http://localhost:3001/api/lab-tests/${name}`);
+                const data = await response.json();
+                setLabTests(data);
+            } catch (error) {
+                console.error('Error fetching lab tests:', error);
+            }
+        };
+
+        fetchLabTests();
+    }, [name]);
 
     const handleSymptomSubmit = (e) => {
         e.preventDefault();
@@ -48,15 +68,24 @@ const PatientInfo = () => {
     return (
         <div className="page-content">
             <h1>Patient Information</h1>
-            <p>Welcome, {name}. Here is your information.</p>
-            {waitTime !== null && patientsAhead !== null ? (
-                <div>
-                    <p>Possible Wait Time: {waitTime} minutes</p>
-                    <p>Patients Ahead: {patientsAhead}</p>
-                </div>
-            ) : (
-                <p>Loading your information...</p>
-            )}
+            <p>Welcome, {name}</p>
+            
+            <div className="queue-info">
+                <h2>Your Queue Status</h2>
+                {queueInfo.severityLevel && (
+                    <p>Severity Level: {queueInfo.severityLevel}</p>
+                )}
+                {queueInfo.position && (
+                    <p>Your Position in Queue: {queueInfo.position}</p>
+                )}
+                {queueInfo.patientsAhead && (
+                    <p>Patients Ahead of You: {queueInfo.patientsAhead}</p>
+                )}
+                {queueInfo.waitTime && (
+                    <p>Estimated Wait Time: {queueInfo.waitTime} minutes</p>
+                )}
+            </div>
+
             <h2>Lab Tests</h2>
             {labTests.length > 0 ? (
                 <ul>

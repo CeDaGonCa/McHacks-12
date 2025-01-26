@@ -3,43 +3,64 @@ import './Page.css'; // Import the CSS file for page styling
 
 const NurseDashboard = () => {
     const [patientName, setPatientName] = useState('');
-    const [levelOfConcern, setLevelOfConcern] = useState(1);
-    const [visitDuration, setVisitDuration] = useState('');
-    const [questions, setQuestions] = useState([]);
-    const [currentAnswer, setCurrentAnswer] = useState('');
+    const [severityLevel, setSeverityLevel] = useState(3); // Default to middle severity
+    const [estimatedVisitDuration, setEstimatedVisitDuration] = useState(30); // Default 30 mins
+    const [queuedPatients, setQueuedPatients] = useState([]);
 
     useEffect(() => {
-        // Fetch questions from the backend or a global state
-        // For now, we'll simulate fetching questions
-        const fetchedQuestions = [
-            // Example: { id: 1, text: 'What are the visiting hours?', answer: '' }
-        ];
-        setQuestions(fetchedQuestions);
+        // Fetch current queue on component mount
+        fetchQueuedPatients();
+
+        // Set up WebSocket connection for real-time updates
+        const socket = new WebSocket('ws://localhost:3001');
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            setQueuedPatients(data.patients);
+        };
+
+        return () => socket.close();
     }, []);
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        // Add logic to handle the submission of new patient information
-        console.log('New patient submitted:', { patientName, levelOfConcern, visitDuration });
-        // Clear the form fields after submission
-        setPatientName('');
-        setLevelOfConcern(1);
-        setVisitDuration('');
+    const fetchQueuedPatients = async () => {
+        try {
+            const response = await fetch('http://localhost:3001/api/queue');
+            const data = await response.json();
+            setQueuedPatients(data.patients);
+        } catch (error) {
+            console.error('Error fetching queue:', error);
+        }
     };
 
-    const handleAnswerSubmit = (e, questionId) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // Add logic to handle the submission of an answer
-        setQuestions(questions.map(q => q.id === questionId ? { ...q, answer: currentAnswer } : q));
-        setCurrentAnswer('');
+        try {
+            const response = await fetch('http://localhost:3001/api/queue', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    patientName,
+                    severityLevel,
+                    estimatedVisitDuration
+                }),
+            });
+            
+            if (response.ok) {
+                setPatientName('');
+                setSeverityLevel(3);
+                setEstimatedVisitDuration(30);
+                fetchQueuedPatients();
+            }
+        } catch (error) {
+            console.error('Error adding patient to queue:', error);
+        }
     };
 
     return (
         <div className="page-content">
             <h1>Nurse Dashboard</h1>
-            <p>Welcome to the nurse dashboard. Here you can manage patient information and other tasks.</p>
             
-            <h2>Submit New Patient Information</h2>
             <form onSubmit={handleSubmit}>
                 <div>
                     <label>Patient Name:</label>
@@ -47,48 +68,46 @@ const NurseDashboard = () => {
                         type="text"
                         value={patientName}
                         onChange={(e) => setPatientName(e.target.value)}
+                        required
                     />
                 </div>
                 <div>
-                    <label>Level of Concern (1-5):</label>
-                    <input
-                        type="number"
-                        min="1"
-                        max="5"
-                        value={levelOfConcern}
-                        onChange={(e) => setLevelOfConcern(e.target.value)}
-                    />
+                    <label>Severity Level (1-5):</label>
+                    <select 
+                        value={severityLevel}
+                        onChange={(e) => setSeverityLevel(Number(e.target.value))}
+                    >
+                        <option value={1}>1 - Critical</option>
+                        <option value={2}>2 - Severe</option>
+                        <option value={3}>3 - Moderate</option>
+                        <option value={4}>4 - Mild</option>
+                        <option value={5}>5 - Non-urgent</option>
+                    </select>
                 </div>
                 <div>
-                    <label>Estimated Doctor Visit Duration (minutes):</label>
+                    <label>Estimated Visit Duration (minutes):</label>
                     <input
                         type="number"
-                        value={visitDuration}
-                        onChange={(e) => setVisitDuration(e.target.value)}
+                        value={estimatedVisitDuration}
+                        onChange={(e) => setEstimatedVisitDuration(Number(e.target.value))}
+                        min="5"
+                        max="180"
                     />
                 </div>
-                <button type="submit">Submit Patient</button>
+                <button type="submit">Add to Queue</button>
             </form>
 
-            <h2>Answer Questions</h2>
-            {questions.length > 0 ? (
-                questions.map(question => (
-                    <div key={question.id}>
-                        <p>{question.text}</p>
-                        <form onSubmit={(e) => handleAnswerSubmit(e, question.id)}>
-                            <input
-                                type="text"
-                                value={question.answer || currentAnswer}
-                                onChange={(e) => setCurrentAnswer(e.target.value)}
-                            />
-                            <button type="submit">Submit Answer</button>
-                        </form>
-                        {question.answer && <p>Answer: {question.answer}</p>}
+            <h2>Current Queue</h2>
+            <div className="queue-list">
+                {queuedPatients.map((patient, index) => (
+                    <div key={patient.id} className={`patient-card severity-${patient.severityLevel}`}>
+                        <p>Name: {patient.name}</p>
+                        <p>Severity: {patient.severityLevel}</p>
+                        <p>Wait Time: {patient.estimatedWaitTime} minutes</p>
+                        <p>Queue Position: {index + 1}</p>
                     </div>
-                ))
-            ) : (
-                <p>No questions available.</p>
-            )}
+                ))}
+            </div>
         </div>
     );
 };
