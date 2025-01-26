@@ -168,3 +168,10 @@
 .discharge-btn:hover {
     background-color: #f4511e;
 }
+
+/* Add these styles for the emergency button text */
+.emergency-text {
+    font-size: 32px;
+    font-weight: bold;
+    color: white;
+}

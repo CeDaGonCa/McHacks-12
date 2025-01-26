@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import './Page.css'; // Import the CSS file for page styling
-import { ReactComponent as EmergencyIcon } from '../assets/emergency-icon.svg';
 
 const PatientInfo = () => {
     const location = useLocation();
@@ -123,7 +122,7 @@ const PatientInfo = () => {
             </div>
 
             <button className="emergency-button" onClick={handleEmergency}>
-                <EmergencyIcon className="emergency-icon" />
+                <span className="emergency-text">!</span>
             </button>
 
             {showEmergencyModal && (
