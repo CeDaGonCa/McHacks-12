@@ -1,6 +1,6 @@
 FrontEnd
-    npm run start
+    console: npm run start
     PORT: 3000
 BackEnd (questionnairetest)
-    node a.js
+    console: node a.js
     PORT: 3001
