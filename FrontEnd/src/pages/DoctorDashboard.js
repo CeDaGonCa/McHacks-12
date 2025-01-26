@@ -2,204 +2,153 @@ import React, { useState, useEffect } from 'react';
 import './Page.css';
 
 const DoctorDashboard = () => {
+    const [doctorQueue, setDoctorQueue] = useState([]);
     const [selectedPatient, setSelectedPatient] = useState(null);
-    const [queues, setQueues] = useState({
-        initial: [],
-        testResults: [],
-        additionalTests: []
-    });
-    const [testResults, setTestResults] = useState('');
-    const [roomNumber, setRoomNumber] = useState('');
-    const [dischargeNotes, setDischargeNotes] = useState('');
 
     useEffect(() => {
         // Set up WebSocket connection for real-time updates
         const socket = new WebSocket('ws://localhost:3001');
-        
         socket.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                // Ensure data has the expected structure
-                setQueues({
-                    initial: data.initial || [],
-                    testResults: data.testResults || [],
-                    additionalTests: data.additionalTests || []
-                });
-            } catch (error) {
-                console.error('Error parsing WebSocket data:', error);
+            const data = JSON.parse(event.data);
+            if (data.type === 'DOCTOR_QUEUE_UPDATE') {
+                setDoctorQueue(data.queue);
             }
         };
 
-        // Initial fetch of queues
-        fetchQueues();
+        // Initial fetch of doctor's queue
+        fetchDoctorQueue();
 
-        return () => {
-            if (socket.readyState === WebSocket.OPEN) {
-                socket.close();
-            }
-        };
+        return () => socket.close();
     }, []);
 
-    const fetchQueues = async () => {
+    const fetchDoctorQueue = async () => {
         try {
-            const response = await fetch('http://localhost:3001/api/queue');
+            const response = await fetch('http://localhost:3001/api/doctor/queue');
             const data = await response.json();
-            setQueues({
-                initial: data.initial || [],
-                testResults: data.testResults || [],
-                additionalTests: data.additionalTests || []
-            });
+            setDoctorQueue(data.queue || []);
         } catch (error) {
-            console.error('Error fetching queues:', error);
+            console.error('Error fetching doctor queue:', error);
         }
     };
 
-    const handleTestResultSubmit = async (e) => {
-        e.preventDefault();
-        if (!selectedPatient) return;
-
-        try {
-            await fetch(`http://localhost:3001/api/patient/${selectedPatient.id}/tests`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    tests: [{
-                        type: 'general',
-                        result: testResults,
-                        status: 'completed',
-                        timestamp: new Date().toISOString()
-                    }]
-                })
-            });
-            setTestResults('');
-            fetchQueues();
-        } catch (error) {
-            console.error('Error submitting test results:', error);
-        }
+    const handlePatientSelect = (patient) => {
+        setSelectedPatient(patient);
     };
 
-    const handleRoomAssignment = async (e) => {
-        e.preventDefault();
+    const handleOrderTests = async () => {
         if (!selectedPatient) return;
-
         try {
-            await fetch(`http://localhost:3001/api/patient/${selectedPatient.id}/room`, {
+            await fetch(`http://localhost:3001/api/doctor/order-tests/${selectedPatient.id}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ roomNumber })
             });
-            setRoomNumber('');
-            fetchQueues();
-        } catch (error) {
-            console.error('Error assigning room:', error);
-        }
-    };
-
-    const handleDischargePatient = async (e) => {
-        e.preventDefault();
-        if (!selectedPatient) return;
-
-        try {
-            await fetch(`http://localhost:3001/api/patient/${selectedPatient.id}/discharge`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    dischargeNotes,
-                    timestamp: new Date().toISOString()
-                })
-            });
-            setDischargeNotes('');
             setSelectedPatient(null);
-            fetchQueues();
+            fetchDoctorQueue();
         } catch (error) {
-            console.error('Error discharging patient:', error);
+            console.error('Error ordering tests:', error);
+        }
+    };
+
+    const handleHospitalize = async () => {
+        if (!selectedPatient) return;
+        const roomNumber = prompt('Enter room number for hospitalization:');
+        if (!roomNumber) return;
+
+        try {
+            await fetch(`http://localhost:3001/api/doctor/hospitalize/${selectedPatient.id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ roomNumber }),
+            });
+            setSelectedPatient(null);
+            fetchDoctorQueue();
+        } catch (error) {
+            console.error('Error hospitalizing patient:', error);
+        }
+    };
+
+    const handlePrescribeTreatment = async () => {
+        if (!selectedPatient) return;
+        const treatment = prompt('Enter treatment details:');
+        if (!treatment) return;
+
+        try {
+            await fetch(`http://localhost:3001/api/doctor/prescribe/${selectedPatient.id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ treatment }),
+            });
+            setSelectedPatient(null);
+            fetchDoctorQueue();
+        } catch (error) {
+            console.error('Error prescribing treatment:', error);
         }
     };
 
     return (
-        <>
+        <div className="page-content">
             <h1>Doctor Dashboard</h1>
-            
-            <div className="queues-container">
+
+            <div className="doctor-dashboard-container">
+                {/* Patient Queue Section */}
                 <div className="queue-section">
-                    <h2>Initial Queue</h2>
-                    <div className="queue-list">
-                        {Array.isArray(queues.initial) && queues.initial.map(patient => (
+                    <h2>Patients Waiting</h2>
+                    <div className="patient-list">
+                        {doctorQueue.map((patient) => (
                             <div 
                                 key={patient.id}
                                 className={`patient-card ${selectedPatient?.id === patient.id ? 'selected' : ''}`}
-                                onClick={() => setSelectedPatient(patient)}
+                                onClick={() => handlePatientSelect(patient)}
                             >
-                                <p>Name: {patient.name || patient.patientName}</p>
-                                <p>Severity: {patient.severityLevel}</p>
-                                <p>Wait Time: {patient.estimatedWaitTime} minutes</p>
+                                <h3>{patient.name}</h3>
+                                <p className="severity">Severity Level: {patient.severityLevel}</p>
+                                <div className="test-results">
+                                    <h4>Lab Test Results:</h4>
+                                    <ul>
+                                        {patient.labTests?.map((test, index) => (
+                                            <li key={index}>
+                                                <span className="test-name">{test.name}</span>
+                                                <span className="test-result">{test.result || 'Pending'}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
                             </div>
                         ))}
+                        {doctorQueue.length === 0 && (
+                            <p className="no-patients">No patients waiting</p>
+                        )}
                     </div>
                 </div>
 
-                <div className="queue-section">
-                    <h2>Awaiting Test Results</h2>
-                    <div className="queue-list">
-                        {Array.isArray(queues.testResults) && queues.testResults.map(patient => (
-                            <div 
-                                key={patient.id}
-                                className={`patient-card ${selectedPatient?.id === patient.id ? 'selected' : ''}`}
-                                onClick={() => setSelectedPatient(patient)}
+                {/* Patient Actions Section */}
+                {selectedPatient && (
+                    <div className="patient-actions">
+                        <h3>Actions for {selectedPatient.name}</h3>
+                        <div className="action-buttons">
+                            <button 
+                                className="action-btn additional-tests"
+                                onClick={handleOrderTests}
                             >
-                                <p>Name: {patient.name || patient.patientName}</p>
-                                <p>Pending Tests: {patient.pendingTests?.length || 0}</p>
-                            </div>
-                        ))}
+                                Order Additional Tests
+                            </button>
+                            <button 
+                                className="action-btn hospitalize"
+                                onClick={handleHospitalize}
+                            >
+                                Hospitalize
+                            </button>
+                            <button 
+                                className="action-btn treatment"
+                                onClick={handlePrescribeTreatment}
+                            >
+                                Prescribe Treatment
+                            </button>
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
-
-            {selectedPatient && (
-                <div className="patient-actions">
-                    <h3>Selected Patient: {selectedPatient.name || selectedPatient.patientName}</h3>
-                    
-                    <form onSubmit={handleTestResultSubmit}>
-                        <div>
-                            <label>Test Results:</label>
-                            <textarea
-                                value={testResults}
-                                onChange={(e) => setTestResults(e.target.value)}
-                                placeholder="Enter test results..."
-                            />
-                        </div>
-                        <button type="submit">Submit Test Results</button>
-                    </form>
-
-                    <form onSubmit={handleRoomAssignment}>
-                        <div>
-                            <label>Assign Room:</label>
-                            <input
-                                type="text"
-                                value={roomNumber}
-                                onChange={(e) => setRoomNumber(e.target.value)}
-                                placeholder="Room number"
-                            />
-                        </div>
-                        <button type="submit">Assign Room</button>
-                    </form>
-
-                    <form onSubmit={handleDischargePatient}>
-                        <div>
-                            <label>Discharge Notes:</label>
-                            <textarea
-                                value={dischargeNotes}
-                                onChange={(e) => setDischargeNotes(e.target.value)}
-                                placeholder="Enter discharge notes..."
-                            />
-                        </div>
-                        <button type="submit" className="discharge-btn">
-                            Discharge Patient
-                        </button>
-                    </form>
-                </div>
-            )}
-        </>
+        </div>
     );
 };
 

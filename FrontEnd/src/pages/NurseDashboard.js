@@ -14,6 +14,8 @@ const NurseDashboard = () => {
     const [severityLevel, setSeverityLevel] = useState(3);
     const [estimatedVisitDuration, setEstimatedVisitDuration] = useState(30);
     const [queuedPatients, setQueuedPatients] = useState([]);
+    const [patientSymptoms, setPatientSymptoms] = useState([]);
+    const [selectedPatient, setSelectedPatient] = useState(null);
 
     useEffect(() => {
         // Fetch current queue on component mount
@@ -23,11 +25,28 @@ const NurseDashboard = () => {
         const socket = new WebSocket('ws://localhost:3001');
         socket.onmessage = (event) => {
             const data = JSON.parse(event.data);
-            setQueuedPatients(data.patients);
+            if (data.type === 'NEW_SYMPTOMS' && data.data.patientName === selectedPatient) {
+                // Only add symptoms if they match the selected patient
+                setPatientSymptoms(prev => [{
+                    patientName: data.data.patientName,
+                    symptoms: data.data.symptoms,
+                    timestamp: data.data.timestamp
+                }, ...prev]);
+            }
+            if (data.type === 'LAB_TEST_ADDED') {
+                setQueuedPatients(prev => [...prev, data.data]);
+            }
         };
 
+        // Fetch symptoms when a patient is selected
+        if (selectedPatient) {
+            fetchPatientSymptoms(selectedPatient);
+        } else {
+            setPatientSymptoms([]); // Clear symptoms when no patient is selected
+        }
+
         return () => socket.close();
-    }, []);
+    }, [selectedPatient]); // Re-run effect when selected patient changes
 
     const fetchQueuedPatients = async () => {
         try {
@@ -36,6 +55,16 @@ const NurseDashboard = () => {
             setQueuedPatients(data.patients);
         } catch (error) {
             console.error('Error fetching queue:', error);
+        }
+    };
+
+    const fetchPatientSymptoms = async (patientName) => {
+        try {
+            const response = await fetch(`http://localhost:3001/api/nurse/patient-symptoms/${patientName}`);
+            const data = await response.json();
+            setPatientSymptoms(data.symptoms || []);
+        } catch (error) {
+            console.error('Error fetching patient symptoms:', error);
         }
     };
 
@@ -141,8 +170,31 @@ const NurseDashboard = () => {
         }));
     };
 
+    const handleReviewSymptom = async (symptomId) => {
+        try {
+            await fetch(`http://localhost:3001/api/nurse/review-symptom/${symptomId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+            });
+            
+            // Remove the reviewed symptom from the list
+            setPatientSymptoms(prev => 
+                prev.filter(symptom => symptom.id !== symptomId)
+            );
+        } catch (error) {
+            console.error('Error reviewing symptom:', error);
+        }
+    };
+
+    // Update patient info handler to also set selected patient
+    const handlePatientNameChange = (e) => {
+        const name = e.target.value;
+        setPatientInfo(prev => ({...prev, name}));
+        setSelectedPatient(name); // Set selected patient when name is entered
+    };
+
     return (
-        <>
+        <div className="page-content">
             <h1>Nurse Dashboard</h1>
             
             <form onSubmit={handleSubmit}>
@@ -152,7 +204,7 @@ const NurseDashboard = () => {
                         <input
                             type="text"
                             value={patientInfo.name}
-                            onChange={(e) => setPatientInfo({...patientInfo, name: e.target.value})}
+                            onChange={handlePatientNameChange}
                             required
                         />
                     </div>
@@ -273,6 +325,34 @@ const NurseDashboard = () => {
                 <button type="submit">Add to Queue</button>
             </form>
 
+            {/* Only show symptoms section when a patient is selected */}
+            {selectedPatient && (
+                <div className="symptoms-section">
+                    <h2>Symptoms for {selectedPatient}</h2>
+                    <div className="symptoms-list">
+                        {patientSymptoms.map((symptom, index) => (
+                            <div key={index} className="symptom-card">
+                                <div className="symptom-content">
+                                    <p className="symptom-text">{symptom.symptoms}</p>
+                                    <span className="symptom-timestamp">
+                                        {new Date(symptom.timestamp).toLocaleString()}
+                                    </span>
+                                </div>
+                                <button 
+                                    className="review-button"
+                                    onClick={() => handleReviewSymptom(symptom.id)}
+                                >
+                                    Mark as Reviewed
+                                </button>
+                            </div>
+                        ))}
+                        {patientSymptoms.length === 0 && (
+                            <p className="no-symptoms">No symptoms recorded for this patient</p>
+                        )}
+                    </div>
+                </div>
+            )}
+
             <h2>Current Queue</h2>
             <div className="queue-list">
                 {queuedPatients.map((patient, index) => (
@@ -296,7 +376,7 @@ const NurseDashboard = () => {
                     </div>
                 ))}
             </div>
-        </>
+        </div>
     );
 };
 

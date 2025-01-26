@@ -14,7 +14,7 @@ const PatientInfo = () => {
     });
     const [labTests, setLabTests] = useState([]);
     const [symptoms, setSymptoms] = useState('');
-    const [submittedSymptoms, setSubmittedSymptoms] = useState('');
+    const [submitted, setSubmitted] = useState(false);
     const [patientRecord, setPatientRecord] = useState({
         tests: [],
         notes: [],
@@ -151,12 +151,45 @@ const PatientInfo = () => {
         fetchPatientRecord();
     }, [name]);
 
-    const handleSymptomSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // Simulate sending symptoms to the backend
-        console.log('Symptoms submitted:', symptoms);
-        setSubmittedSymptoms(symptoms);
-        setSymptoms('');
+        if (!symptoms.trim()) return;
+
+        try {
+            const response = await fetch('http://localhost:3001/api/patient/symptoms', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    patientName: name,  // Add patient name to identify who submitted
+                    symptoms: symptoms,
+                    timestamp: new Date().toISOString()
+                }),
+            });
+
+            if (response.ok) {
+                // Notify nurses via WebSocket about new symptoms
+                const ws = new WebSocket('ws://localhost:3001');
+                ws.onopen = () => {
+                    ws.send(JSON.stringify({
+                        type: 'NEW_SYMPTOMS',
+                        data: {
+                            patientName: name,
+                            symptoms: symptoms,
+                            timestamp: new Date().toISOString()
+                        }
+                    }));
+                    ws.close();
+                };
+
+                setSubmitted(true);
+                setSymptoms('');
+                setTimeout(() => setSubmitted(false), 3000);
+            }
+        } catch (error) {
+            console.error('Error submitting symptoms:', error);
+        }
     };
 
     const handleEmergency = async () => {
@@ -252,20 +285,24 @@ const PatientInfo = () => {
             </div>
 
             <h2>Submit Your Symptoms</h2>
-            <form onSubmit={handleSymptomSubmit}>
-                <div>
+            <form onSubmit={handleSubmit} className="symptoms-form">
+                <div className="form-group">
                     <label>Symptoms:</label>
                     <textarea
                         value={symptoms}
                         onChange={(e) => setSymptoms(e.target.value)}
+                        placeholder="Please describe your symptoms in detail..."
+                        required
+                        className="symptoms-input"
                     />
                 </div>
-                <button type="submit">Submit Symptoms</button>
+                <button type="submit" className="submit-button">
+                    Submit Symptoms
+                </button>
             </form>
-            {submittedSymptoms && (
-                <div>
-                    <h3>Your Submitted Symptoms:</h3>
-                    <p>{submittedSymptoms}</p>
+            {submitted && (
+                <div className="success-message">
+                    Symptoms submitted successfully! A nurse will review them shortly.
                 </div>
             )}
         </div>
