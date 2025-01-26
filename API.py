@@ -50,8 +50,7 @@ def index():
     # print("hits the get")
     print(Patients)
     return {"items": PatientsQueue}
-    # return {"message": "Hello"}
-
+    # return {"message": 
 
 @app.get("/patients/{patient_id}")
 def query_patient(patient_id: int) -> Patient:
