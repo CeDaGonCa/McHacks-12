@@ -104,26 +104,36 @@ const PatientInfo = () => {
     }, [name]);
 
     useEffect(() => {
-        // Fetch lab tests from the backend
+        // Set up WebSocket connection for real-time updates
+        const socket = new WebSocket('ws://localhost:3001');
+        
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            
+            if (data.type === 'LAB_TEST_ADDED' && data.data.patientName === name) {
+                // Add new lab test to the list
+                setLabTests(prevTests => [...prevTests, data.data]);
+            }
+        };
+
+        // Initial fetch of lab tests
         const fetchLabTests = async () => {
             try {
                 const response = await fetch(`http://localhost:3001/api/lab-tests/${name}`);
-                if (!response.ok) {
-                    throw new Error('Failed to fetch lab tests');
+                if (response.ok) {
+                    const data = await response.json();
+                    setLabTests(data);
                 }
-                const data = await response.json();
-                console.log('Fetched lab tests:', data); // For debugging
-                setLabTests(data);
             } catch (error) {
                 console.error('Error fetching lab tests:', error);
             }
         };
 
-        // Set up polling for lab tests updates
         fetchLabTests();
-        const interval = setInterval(fetchLabTests, 5000); // Poll every 5 seconds
 
-        return () => clearInterval(interval);
+        return () => {
+            socket.close();
+        };
     }, [name]);
 
     useEffect(() => {
@@ -228,9 +238,8 @@ const PatientInfo = () => {
                     <ul className="lab-tests-list">
                         {labTests.map((test, index) => (
                             <li key={index} className={`lab-test-item ${test.status}`}>
-                                <div className="test-name">{test.name}</div>
+                                <div className="test-name">{test.testName}</div>
                                 <div className="test-status">{test.status}</div>
-                                {test.result && <div className="test-result">{test.result}</div>}
                                 <div className="test-date">
                                     {new Date(test.timestamp).toLocaleDateString()}
                                 </div>

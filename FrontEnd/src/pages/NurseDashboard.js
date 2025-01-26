@@ -75,17 +75,62 @@ const NurseDashboard = () => {
         }
     };
 
-    const handleAddLabTest = () => {
-        if (currentLabTest.trim()) {
-            setPatientInfo(prev => ({
-                ...prev,
-                labTests: [...prev.labTests, {
-                    name: currentLabTest.trim(),
+    const handleAddTest = async (e) => {
+        e.preventDefault();
+        if (!patientInfo.name || !currentLabTest.trim()) return;
+
+        // First update local state
+        const newTest = {
+            name: currentLabTest.trim(),
+            status: 'pending',
+            timestamp: new Date().toISOString()
+        };
+
+        setPatientInfo(prev => ({
+            ...prev,
+            labTests: [...prev.labTests, newTest]
+        }));
+
+        try {
+            const response = await fetch('http://localhost:3001/api/lab-tests/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    patientName: patientInfo.name,
+                    testName: currentLabTest.trim(),
                     status: 'pending',
                     timestamp: new Date().toISOString()
-                }]
+                }),
+            });
+
+            if (response.ok) {
+                // Clear the lab test input after successful addition
+                setCurrentLabTest('');
+                
+                // Emit WebSocket event to notify patient's page
+                const ws = new WebSocket('ws://localhost:3001');
+                ws.onopen = () => {
+                    ws.send(JSON.stringify({
+                        type: 'LAB_TEST_ADDED',
+                        data: {
+                            patientName: patientInfo.name,
+                            testName: currentLabTest.trim(),
+                            status: 'pending',
+                            timestamp: new Date().toISOString()
+                        }
+                    }));
+                    ws.close();
+                };
+            }
+        } catch (error) {
+            // If there's an error, remove the test from local state
+            setPatientInfo(prev => ({
+                ...prev,
+                labTests: prev.labTests.filter(test => test.name !== currentLabTest.trim())
             }));
-            setCurrentLabTest('');
+            console.error('Error adding lab test:', error);
         }
     };
 
@@ -148,30 +193,57 @@ const NurseDashboard = () => {
                     <div className="lab-tests-section">
                         <label>Lab Tests:</label>
                         <div className="lab-tests-input">
-                            <input
-                                type="text"
-                                value={currentLabTest}
-                                onChange={(e) => setCurrentLabTest(e.target.value)}
-                                placeholder="Enter lab test"
-                            />
-                            <button type="button" onClick={handleAddLabTest}>Add Test</button>
+                            <form onSubmit={(e) => {
+                                e.preventDefault();
+                                handleAddTest(e);
+                            }}>
+                                <input
+                                    type="text"
+                                    value={currentLabTest}
+                                    onChange={(e) => setCurrentLabTest(e.target.value)}
+                                    placeholder="Enter lab test"
+                                    onKeyPress={(e) => {
+                                        if (e.key === 'Enter') {
+                                            handleAddTest(e);
+                                        }
+                                    }}
+                                />
+                                <button 
+                                    type="button" 
+                                    onClick={(e) => handleAddTest(e)} 
+                                    className="add-test-btn"
+                                >
+                                    Add Test
+                                </button>
+                            </form>
                         </div>
-                        {patientInfo.labTests.length > 0 && (
-                            <ul className="lab-tests-list">
-                                {patientInfo.labTests.map((test, index) => (
-                                    <li key={index}>
-                                        {test.name}
-                                        <button 
-                                            type="button" 
-                                            onClick={() => handleRemoveLabTest(index)}
-                                            className="remove-test"
-                                        >
-                                            ×
-                                        </button>
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
+                        
+                        {/* Display added lab tests */}
+                        <div className="added-tests-container">
+                            <h3>Added Tests:</h3>
+                            {patientInfo.labTests.length > 0 ? (
+                                <ul className="lab-tests-list">
+                                    {patientInfo.labTests.map((test, index) => (
+                                        <li key={index} className="lab-test-item">
+                                            <span className="test-name">{test.name}</span>
+                                            <span className="test-status">{test.status}</span>
+                                            <span className="test-date">
+                                                {new Date(test.timestamp).toLocaleString()}
+                                            </span>
+                                            <button 
+                                                type="button" 
+                                                onClick={() => handleRemoveLabTest(index)}
+                                                className="remove-test"
+                                            >
+                                                ×
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p>No tests added yet</p>
+                            )}
+                        </div>
                     </div>
                 </div>
                 <div>

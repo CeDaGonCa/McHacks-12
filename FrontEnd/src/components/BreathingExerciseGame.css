@@ -1,0 +1,48 @@
+.breathing-exercise {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+}
+
+.breathing-circle {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background-color: #4285f4;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 20px;
+    box-shadow: 0 0 20px rgba(66, 133, 244, 0.3);
+}
+
+.instruction {
+    color: white;
+    text-align: center;
+}
+
+.instruction h3 {
+    margin: 0;
+    font-size: 24px;
+}
+
+.instruction p {
+    margin: 10px 0 0;
+    font-size: 36px;
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 18px;
+    border: none;
+    border-radius: 5px;
+    background-color: #4285f4;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #3367d6;
+} 

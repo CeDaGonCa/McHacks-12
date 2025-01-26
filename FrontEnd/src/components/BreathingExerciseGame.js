@@ -6,36 +6,10 @@ const BreathingExerciseGame = () => {
     const [timeLeft, setTimeLeft] = useState(4);
     const [isActive, setIsActive] = useState(false);
 
-    // Define phases with strict order
-    const getNextPhase = (currentPhase) => {
-        switch (currentPhase) {
-            case 'breathIn':
-                return 'holdBreath';  // After breathing in, we hold
-            case 'holdBreath':
-                return 'breathOut';   // After holding, we breathe out
-            case 'breathOut':
-                return 'breathIn';    // After breathing out, we start over
-            default:
-                return 'breathIn';
-        }
-    };
-
     const phases = {
-        breathIn: { 
-            duration: 4, 
-            text: 'Breath IN', 
-            order: 1 
-        },
-        holdBreath: { 
-            duration: 4, 
-            text: 'Hold Your Breath', 
-            order: 2 
-        },
-        breathOut: { 
-            duration: 4, 
-            text: 'Breath OUT', 
-            order: 3 
-        }
+        breathIn: { duration: 4, text: 'Breath IN', next: 'holdBreath' },
+        holdBreath: { duration: 4, text: 'Hold Your Breath', next: 'breathOut' },
+        breathOut: { duration: 4, text: 'Breath OUT', next: 'breathIn' }
     };
 
     useEffect(() => {
@@ -44,28 +18,26 @@ const BreathingExerciseGame = () => {
             interval = setInterval(() => {
                 setTimeLeft((prevTime) => {
                     if (prevTime <= 1) {
-                        // Use the getNextPhase function to ensure correct order
+                        // Move to next phase
                         setPhase((currentPhase) => {
-                            const nextPhase = getNextPhase(currentPhase);
-                            console.log(`Current: ${currentPhase} (${phases[currentPhase].order}) -> Next: ${nextPhase} (${phases[nextPhase].order})`);
-                            return nextPhase;
+                            console.log(`Transitioning from ${currentPhase} to ${phases[currentPhase].next}`);
+                            return phases[currentPhase].next;
                         });
-                        return 4; // Reset timer to 4 seconds for next phase
+                        return phases[phases[currentPhase].next].duration;
                     }
                     return prevTime - 1;
                 });
             }, 1000);
         }
         return () => clearInterval(interval);
-    }, [isActive]);
+    }, [isActive, phase]);
 
     const toggleExercise = () => {
         setIsActive(!isActive);
         if (!isActive) {
-            // Always start with Breath IN
             console.log('Starting exercise with Breath IN');
             setPhase('breathIn');
-            setTimeLeft(4);
+            setTimeLeft(phases.breathIn.duration);
         }
     };
 
@@ -75,7 +47,7 @@ const BreathingExerciseGame = () => {
 
         switch (phase) {
             case 'breathIn':
-                scale = 1 + ((4 - timeLeft) / 4);
+                scale = 1 + ((phases.breathIn.duration - timeLeft) / phases.breathIn.duration);
                 backgroundColor = '#4285f4'; // Blue for breathing in
                 break;
             case 'holdBreath':
@@ -83,7 +55,7 @@ const BreathingExerciseGame = () => {
                 backgroundColor = '#FFD700'; // Gold color for holding breath
                 break;
             case 'breathOut':
-                scale = 2 - ((4 - timeLeft) / 4);
+                scale = 2 - ((phases.breathOut.duration - timeLeft) / phases.breathOut.duration);
                 backgroundColor = '#4285f4'; // Back to blue for breathing out
                 break;
             default:
@@ -112,4 +84,4 @@ const BreathingExerciseGame = () => {
     );
 };
 
-export default BreathingExerciseGame;
+export default BreathingExerciseGame; 

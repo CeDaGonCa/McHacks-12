@@ -28,7 +28,7 @@ const Assistance = () => {
     return (
         <div className="page-content">
             <h1>Assistance Page</h1>
-            <p>This is the assistance page of our application.</p>
+            <p>This is the assistance page for answers to frequently asked questions.</p>
 
             {/* FAQ Section 1 */}
             <div className="faq-section">
