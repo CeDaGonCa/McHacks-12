@@ -1,12 +1,15 @@
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
+const cors = require('cors');
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
 let patientsData = {}; // Store patient health data (patientId -> data)
+
+app.use(cors()); // Allow all origins
 
 // Serve the static files (HTML, CSS, JS) for the doctor and patient
 app.use(express.static('public'));
@@ -36,6 +39,6 @@ io.on('connection', (socket) => {
     });
 });
 
-server.listen(3000, () => {
-    console.log('Server is running on http://localhost:3000');
+server.listen(3001, () => {
+    console.log('Server is running on http://localhost:3001');
 });
