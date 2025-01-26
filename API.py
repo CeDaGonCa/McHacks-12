@@ -11,10 +11,10 @@ class PatientPhase(Enum):
     REGISTERED = "registered"
     TRIAGED = "triaged"
 
-    class INVESTIGATIONS_PENDING:
-        ORDERED = "ordered"
-        PENDING = "pending"
-        REPORTED = "reported"
+    # class INVESTIGATIONS_PENDING:
+    #     ORDERED = "ordered"
+    #     PENDING = "pending"
+    #     REPORTED = "reported"
 
     TREATMENT = "treatment"
     ADMITTED = "admitted"
@@ -34,15 +34,23 @@ class Patient(BaseModel):
     phase: PatientPhase
     triage: TriageCategory
 
+    def __hash__(self):
+        return self.id
 
-Patients = dict[int, Patient]
+
+Patients = {
+    # 0: Patient(id=0, phase=PatientPhase.REGISTERED, triage=TriageCategory.RESUSCITATION),
+}
 PatientsQueue = []  # Priority queue
-TimeStamps = Dict[int, time]
+TimeStamps = {} # Dict[int, time]
 
 
 @app.get("/")
 def index():
-    return {"items": Patients}
+    # print("hits the get")
+    print(Patients)
+    return {"items": PatientsQueue}
+    # return {"message": "Hello"}
 
 
 @app.get("/patients/{patient_id}")
@@ -62,13 +70,16 @@ def get_patients_by_parameters(
 
 
 @app.post("/")
-def add_item(Patient: Patient) -> dict[str, Patient]:
-    if Patient in Patients:
+def add_item(P: Patient):
+    print("add_item")
+    if P in Patients.values():
         raise HTTPException(status_code=400, detail=f"Patient {Patient.id} already exists")
-    TimeStamps[Patient.id] = time.time()
-    PatientsQueue.add(Patient)  # later
+    print("add_item 2")
+    TimeStamps[P.id] = time.time()
+    print("add_item 3")
+    PatientsQueue.append(P)
     sortQueue()
-    return {"added": Patient}
+    return {"added": P}
 
 
 @app.delete("/pop/")
@@ -76,6 +87,9 @@ def attendPatient() -> dict[str, Patient]:
     if not PatientsQueue:
         raise HTTPException(status_code=401, detail="Patients queue is empty")
     patient = PatientsQueue.pop()
+    # if patient.phase is PatientPhase.INVESTIGATIONS_PENDING.PENDING:
+    #     patient.phase = PatientPhase.INVESTIGATIONS_PENDING.ORDERED
+    #     PatientsQueue.add(patient)
     sortQueue()
     return {"deleted": patient}  # missing the investigation
 
@@ -84,9 +98,9 @@ def sortQueue() -> ():
     tmp = sorted(PatientsQueue, key=lambda x: compare(x))
 
 
-def compare(x):
+def compare(x: Patient):
     currentTime = time.time()
-    triaVal = x.TriageCategory.value
+    triaVal = x.triage.value
     valX = triaVal * 20 + (
         30 * triaVal if currentTime - TimeStamps.get(x.id) > 60 * 60 else (triaVal * 10) * (currentTime - TimeStamps.get(x.id)) // (60 * 60))  # check the math
     return valX
