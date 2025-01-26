@@ -5,44 +5,108 @@
     padding: 20px;
 }
 
+.circle-container {
+    margin: 20px;
+    position: relative;
+    width: 400px;
+    height: 400px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
 .breathing-circle {
     width: 200px;
     height: 200px;
     border-radius: 50%;
-    background-color: #4285f4;
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
-    margin: 20px;
-    box-shadow: 0 0 20px rgba(66, 133, 244, 0.3);
+    background-color: #e3f2fd;
+    transition: all 0.5s ease;
+    position: relative;
 }
 
 .instruction {
-    color: white;
+    font-size: 1.5em;
+    margin-bottom: 10px;
+    color: #1976d2;
     text-align: center;
+    pointer-events: none;
 }
 
-.instruction h3 {
-    margin: 0;
-    font-size: 24px;
+.count {
+    font-size: 2em;
+    font-weight: bold;
+    color: #1976d2;
+    text-align: center;
+    pointer-events: none;
 }
 
-.instruction p {
-    margin: 10px 0 0;
-    font-size: 36px;
+/* Breathe In Animation - Circle grows */
+.breathing-circle.breatheIn.active {
+    animation: breatheIn 4s linear forwards;
+    background-color: #bbdefb;
+    box-shadow: 0 0 20px rgba(25, 118, 210, 0.4);
+}
+
+/* Hold Animation - Circle maintains size */
+.breathing-circle.hold.active {
+    animation: hold 4s linear forwards;
+    background-color: #90caf9;
+    transform: scale(2);
+    box-shadow: 0 0 30px rgba(25, 118, 210, 0.6);
+}
+
+/* Breathe Out Animation - Circle shrinks */
+.breathing-circle.breatheOut.active {
+    animation: breatheOut 4s linear forwards;
+    background-color: #e3f2fd;
+    box-shadow: 0 0 10px rgba(25, 118, 210, 0.2);
+}
+
+@keyframes breatheIn {
+    0% {
+        transform: scale(1);
+        background-color: #e3f2fd;
+    }
+    100% {
+        transform: scale(2);
+        background-color: #bbdefb;
+    }
+}
+
+@keyframes hold {
+    0%, 100% {
+        transform: scale(2);
+        background-color: #90caf9;
+    }
+}
+
+@keyframes breatheOut {
+    0% {
+        transform: scale(2);
+        background-color: #bbdefb;
+    }
+    100% {
+        transform: scale(1);
+        background-color: #e3f2fd;
+    }
 }
 
 button {
     padding: 10px 20px;
-    font-size: 18px;
+    font-size: 1.2em;
+    background-color: #1976d2;
+    color: white;
     border: none;
     border-radius: 5px;
-    background-color: #4285f4;
-    color: white;
     cursor: pointer;
     transition: background-color 0.3s;
+    margin-top: 20px;
 }
 
 button:hover {
-    background-color: #3367d6;
+    background-color: #1565c0;
 } 
