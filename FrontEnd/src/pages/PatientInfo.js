@@ -22,6 +22,7 @@ const PatientInfo = () => {
     });
     const [showEmergencyModal, setShowEmergencyModal] = useState(false);
     const [totalPatients, setTotalPatients] = useState(0);
+    const [symptomHistory, setSymptomHistory] = useState([]);
 
     useEffect(() => {
         // Set up WebSocket connection to receive real-time updates
@@ -151,9 +152,30 @@ const PatientInfo = () => {
         fetchPatientRecord();
     }, [name]);
 
+    useEffect(() => {
+        // Fetch patient's symptom history on component mount
+        const fetchSymptomHistory = async () => {
+            try {
+                const response = await fetch(`http://localhost:3001/api/patient/symptoms/${name}`);
+                const data = await response.json();
+                setSymptomHistory(data.symptoms || []);
+            } catch (error) {
+                console.error('Error fetching symptom history:', error);
+            }
+        };
+
+        fetchSymptomHistory();
+    }, [name]);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!symptoms.trim()) return;
+
+        const newSymptom = {
+            id: Date.now(),
+            symptoms: symptoms,
+            timestamp: new Date().toISOString()
+        };
 
         try {
             const response = await fetch('http://localhost:3001/api/patient/symptoms', {
@@ -162,30 +184,32 @@ const PatientInfo = () => {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    patientName: name,  // Add patient name to identify who submitted
-                    symptoms: symptoms,
-                    timestamp: new Date().toISOString()
+                    patientName: name,
+                    ...newSymptom
                 }),
             });
 
             if (response.ok) {
-                // Notify nurses via WebSocket about new symptoms
+                // Immediately update the local symptom history
+                setSymptomHistory(prev => [newSymptom, ...prev]);
+                
+                // Show success message and clear input
+                setSubmitted(true);
+                setSymptoms('');
+                setTimeout(() => setSubmitted(false), 3000);
+
+                // Optional: Send WebSocket update to nurses
                 const ws = new WebSocket('ws://localhost:3001');
                 ws.onopen = () => {
                     ws.send(JSON.stringify({
                         type: 'NEW_SYMPTOMS',
                         data: {
                             patientName: name,
-                            symptoms: symptoms,
-                            timestamp: new Date().toISOString()
+                            ...newSymptom
                         }
                     }));
                     ws.close();
                 };
-
-                setSubmitted(true);
-                setSymptoms('');
-                setTimeout(() => setSubmitted(false), 3000);
             }
         } catch (error) {
             console.error('Error submitting symptoms:', error);
@@ -284,27 +308,49 @@ const PatientInfo = () => {
                 )}
             </div>
 
-            <h2>Submit Your Symptoms</h2>
-            <form onSubmit={handleSubmit} className="symptoms-form">
-                <div className="form-group">
-                    <label>Symptoms:</label>
-                    <textarea
-                        value={symptoms}
-                        onChange={(e) => setSymptoms(e.target.value)}
-                        placeholder="Please describe your symptoms in detail..."
-                        required
-                        className="symptoms-input"
-                    />
+            <div className="symptoms-section">
+                <h2>Submit Your Symptoms</h2>
+                <form onSubmit={handleSubmit} className="symptoms-form">
+                    <div className="form-group">
+                        <label>Symptoms:</label>
+                        <textarea
+                            value={symptoms}
+                            onChange={(e) => setSymptoms(e.target.value)}
+                            placeholder="Please describe your symptoms in detail..."
+                            required
+                            className="symptoms-input"
+                        />
+                    </div>
+                    <button type="submit" className="submit-button">
+                        Submit Symptoms
+                    </button>
+                </form>
+                {submitted && (
+                    <div className="success-message">
+                        Symptoms submitted successfully!
+                    </div>
+                )}
+
+                <div className="symptom-history">
+                    <h3>Your Symptom History</h3>
+                    {symptomHistory.length > 0 ? (
+                        <div className="symptom-list">
+                            {symptomHistory.map((entry) => (
+                                <div key={entry.id} className="symptom-entry">
+                                    <div className="symptom-content">
+                                        <p className="symptom-text">{entry.symptoms}</p>
+                                        <span className="symptom-timestamp">
+                                            Submitted on: {new Date(entry.timestamp).toLocaleString()}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="no-symptoms">No symptoms recorded yet</p>
+                    )}
                 </div>
-                <button type="submit" className="submit-button">
-                    Submit Symptoms
-                </button>
-            </form>
-            {submitted && (
-                <div className="success-message">
-                    Symptoms submitted successfully! A nurse will review them shortly.
-                </div>
-            )}
+            </div>
         </div>
     );
 };

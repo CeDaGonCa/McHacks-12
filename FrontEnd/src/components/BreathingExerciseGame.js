@@ -2,79 +2,74 @@ import React, { useState, useEffect } from 'react';
 import './BreathingExerciseGame.css';
 
 const BreathingExerciseGame = () => {
-    const [phase, setPhase] = useState('breathIn');
-    const [timeLeft, setTimeLeft] = useState(4);
+    const [phase, setPhase] = useState('breatheIn');
+    const [count, setCount] = useState(4);
     const [isActive, setIsActive] = useState(false);
-
-    const phases = {
-        breathIn: { duration: 4, text: 'Breath IN', next: 'holdBreath' },
-        holdBreath: { duration: 4, text: 'Hold Your Breath', next: 'breathOut' },
-        breathOut: { duration: 4, text: 'Breath OUT', next: 'breathIn' }
-    };
 
     useEffect(() => {
         let interval = null;
         if (isActive) {
             interval = setInterval(() => {
-                setTimeLeft((prevTime) => {
-                    if (prevTime <= 1) {
-                        // Move to next phase
-                        setPhase((currentPhase) => {
-                            console.log(`Transitioning from ${currentPhase} to ${phases[currentPhase].next}`);
-                            return phases[currentPhase].next;
+                setCount(prevCount => {
+                    // When count reaches 0, switch to next phase
+                    if (prevCount <= 1) {
+                        setPhase(currentPhase => {
+                            switch (currentPhase) {
+                                case 'breatheIn':
+                                    return 'hold';
+                                case 'hold':
+                                    return 'breatheOut';
+                                case 'breatheOut':
+                                    return 'breatheIn';
+                                default:
+                                    return 'breatheIn';
+                            }
                         });
-                        return phases[phases[currentPhase].next].duration;
+                        return 4; // Reset count for next phase
                     }
-                    return prevTime - 1;
+                    return prevCount - 1;
                 });
             }, 1000);
         }
-        return () => clearInterval(interval);
-    }, [isActive, phase]);
+
+        return () => {
+            if (interval) {
+                clearInterval(interval);
+            }
+        };
+    }, [isActive]);
 
     const toggleExercise = () => {
-        setIsActive(!isActive);
         if (!isActive) {
-            console.log('Starting exercise with Breath IN');
-            setPhase('breathIn');
-            setTimeLeft(phases.breathIn.duration);
+            // Starting new exercise
+            setPhase('breatheIn');
+            setCount(4);
         }
+        setIsActive(!isActive);
     };
 
-    const getCircleStyle = () => {
-        let scale = 1;
-        let backgroundColor = '#4285f4'; // Default blue color
-
+    const getPhaseText = () => {
         switch (phase) {
-            case 'breathIn':
-                scale = 1 + ((phases.breathIn.duration - timeLeft) / phases.breathIn.duration);
-                backgroundColor = '#4285f4'; // Blue for breathing in
-                break;
-            case 'holdBreath':
-                scale = 2;
-                backgroundColor = '#FFD700'; // Gold color for holding breath
-                break;
-            case 'breathOut':
-                scale = 2 - ((phases.breathOut.duration - timeLeft) / phases.breathOut.duration);
-                backgroundColor = '#4285f4'; // Back to blue for breathing out
-                break;
+            case 'breatheIn':
+                return 'Breathe In';
+            case 'hold':
+                return 'Hold';
+            case 'breatheOut':
+                return 'Breathe Out';
             default:
-                scale = 1;
+                return 'Breathe In';
         }
-        return {
-            transform: `scale(${scale})`,
-            transition: 'transform 1s ease-in-out, background-color 0.5s ease-in-out',
-            backgroundColor
-        };
     };
 
     return (
         <div className="breathing-exercise">
             <h2>Breathing Exercise</h2>
-            <div className="breathing-circle" style={getCircleStyle()}>
-                <div className="instruction">
-                    <h3>{phases[phase].text}</h3>
-                    <p>{timeLeft}</p>
+            <div className="circle-container">
+                <div className={`breathing-circle ${phase} ${isActive ? 'active' : ''}`}>
+                    <div className="instruction">
+                        {getPhaseText()}
+                    </div>
+                    <div className="count">{count}</div>
                 </div>
             </div>
             <button onClick={toggleExercise}>
