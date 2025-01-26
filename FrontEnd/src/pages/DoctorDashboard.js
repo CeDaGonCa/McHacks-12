@@ -10,6 +10,7 @@ const DoctorDashboard = () => {
     });
     const [testResults, setTestResults] = useState('');
     const [roomNumber, setRoomNumber] = useState('');
+    const [dischargeNotes, setDischargeNotes] = useState('');
 
     useEffect(() => {
         const socket = new WebSocket('ws://localhost:3001');
@@ -58,6 +59,26 @@ const DoctorDashboard = () => {
             setRoomNumber('');
         } catch (error) {
             console.error('Error assigning room:', error);
+        }
+    };
+
+    const handleDischargePatient = async (e) => {
+        e.preventDefault();
+        if (!selectedPatient) return;
+
+        try {
+            await fetch(`http://localhost:3001/api/patient/${selectedPatient.id}/discharge`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    dischargeNotes,
+                    timestamp: new Date().toISOString()
+                })
+            });
+            setDischargeNotes('');
+            setSelectedPatient(null);
+        } catch (error) {
+            console.error('Error discharging patient:', error);
         }
     };
 
@@ -126,6 +147,18 @@ const DoctorDashboard = () => {
                             />
                         </div>
                         <button type="submit">Assign Room</button>
+                    </form>
+
+                    <form onSubmit={handleDischargePatient}>
+                        <div>
+                            <label>Discharge Notes:</label>
+                            <textarea
+                                value={dischargeNotes}
+                                onChange={(e) => setDischargeNotes(e.target.value)}
+                                placeholder="Enter discharge notes..."
+                            />
+                        </div>
+                        <button type="submit" className="discharge-btn">Discharge Patient</button>
                     </form>
                 </div>
             )}

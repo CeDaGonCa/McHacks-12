@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import './Page.css'; // Import the CSS file for page styling
+import { ReactComponent as EmergencyIcon } from '../assets/emergency-icon.svg';
 
 const PatientInfo = () => {
     const location = useLocation();
@@ -19,6 +20,7 @@ const PatientInfo = () => {
         notes: [],
         room: null
     });
+    const [showEmergencyModal, setShowEmergencyModal] = useState(false);
 
     useEffect(() => {
         // Set up WebSocket connection to receive real-time updates
@@ -85,6 +87,18 @@ const PatientInfo = () => {
         setSymptoms('');
     };
 
+    const handleEmergency = async () => {
+        try {
+            await fetch(`http://localhost:3001/api/patient/${name}/emergency`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            setShowEmergencyModal(true);
+        } catch (error) {
+            console.error('Error sending emergency signal:', error);
+        }
+    };
+
     return (
         <div className="page-content">
             <h1>Patient Information</h1>
@@ -92,19 +106,30 @@ const PatientInfo = () => {
             
             <div className="queue-info">
                 <h2>Your Queue Status</h2>
-                {queueInfo.severityLevel && (
-                    <p>Severity Level: {queueInfo.severityLevel}</p>
-                )}
                 {queueInfo.position && (
                     <p>Your Position in Queue: {queueInfo.position}</p>
-                )}
-                {queueInfo.patientsAhead && (
-                    <p>Patients Ahead of You: {queueInfo.patientsAhead}</p>
                 )}
                 {queueInfo.waitTime && (
                     <p>Estimated Wait Time: {queueInfo.waitTime} minutes</p>
                 )}
+                <div className="queue-progress">
+                    <div 
+                        className="queue-progress-bar" 
+                        style={{ width: `${(1 - queueInfo.position/totalPatients) * 100}%` }}
+                    />
+                </div>
             </div>
+
+            <button className="emergency-button" onClick={handleEmergency}>
+                <EmergencyIcon className="emergency-icon" />
+            </button>
+
+            {showEmergencyModal && (
+                <div className="emergency-modal">
+                    <p>Emergency signal sent. A nurse will be with you shortly.</p>
+                    <button onClick={() => setShowEmergencyModal(false)}>Close</button>
+                </div>
+            )}
 
             {patientRecord.room && (
                 <div className="room-info">

@@ -6,6 +6,15 @@ const NurseDashboard = () => {
     const [severityLevel, setSeverityLevel] = useState(3); // Default to middle severity
     const [estimatedVisitDuration, setEstimatedVisitDuration] = useState(30); // Default 30 mins
     const [queuedPatients, setQueuedPatients] = useState([]);
+    const [patientInfo, setPatientInfo] = useState({
+        name: '',
+        age: '',
+        contactNumber: '',
+        email: '',
+        emergencyContact: '',
+        labTests: [],
+        additionalNotes: ''
+    });
 
     useEffect(() => {
         // Fetch current queue on component mount
@@ -40,20 +49,29 @@ const NurseDashboard = () => {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    patientName,
+                    ...patientInfo,
                     severityLevel,
                     estimatedVisitDuration
                 }),
             });
             
             if (response.ok) {
-                setPatientName('');
+                // Reset form
+                setPatientInfo({
+                    name: '',
+                    age: '',
+                    contactNumber: '',
+                    email: '',
+                    emergencyContact: '',
+                    labTests: [],
+                    additionalNotes: ''
+                });
                 setSeverityLevel(3);
                 setEstimatedVisitDuration(30);
                 fetchQueuedPatients();
             }
         } catch (error) {
-            console.error('Error adding patient to queue:', error);
+            console.error('Error adding patient:', error);
         }
     };
 
@@ -62,14 +80,57 @@ const NurseDashboard = () => {
             <h1>Nurse Dashboard</h1>
             
             <form onSubmit={handleSubmit}>
-                <div>
-                    <label>Patient Name:</label>
-                    <input
-                        type="text"
-                        value={patientName}
-                        onChange={(e) => setPatientName(e.target.value)}
-                        required
-                    />
+                <div className="patient-info-grid">
+                    <div>
+                        <label>Patient Name:</label>
+                        <input
+                            type="text"
+                            value={patientInfo.name}
+                            onChange={(e) => setPatientInfo({...patientInfo, name: e.target.value})}
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label>Age:</label>
+                        <input
+                            type="number"
+                            value={patientInfo.age}
+                            onChange={(e) => setPatientInfo({...patientInfo, age: e.target.value})}
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label>Contact Number:</label>
+                        <input
+                            type="tel"
+                            value={patientInfo.contactNumber}
+                            onChange={(e) => setPatientInfo({...patientInfo, contactNumber: e.target.value})}
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label>Email:</label>
+                        <input
+                            type="email"
+                            value={patientInfo.email}
+                            onChange={(e) => setPatientInfo({...patientInfo, email: e.target.value})}
+                        />
+                    </div>
+                    <div>
+                        <label>Emergency Contact:</label>
+                        <input
+                            type="tel"
+                            value={patientInfo.emergencyContact}
+                            onChange={(e) => setPatientInfo({...patientInfo, emergencyContact: e.target.value})}
+                        />
+                    </div>
+                    <div>
+                        <label>Additional Notes:</label>
+                        <textarea
+                            value={patientInfo.additionalNotes}
+                            onChange={(e) => setPatientInfo({...patientInfo, additionalNotes: e.target.value})}
+                        />
+                    </div>
                 </div>
                 <div>
                     <label>Severity Level (1-5):</label>
