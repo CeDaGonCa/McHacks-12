@@ -41,12 +41,12 @@ TimeStamps = Dict[int, time]
 
 
 @app.get("/")
-def index() -> []:
-    return Patients
+def index():
+    return {"items": Patients}
 
 
 @app.get("/patients/{patient_id}")
-def query_patient(patient_id: int) -> Type[dict[int, Patient]]:
+def query_patient(patient_id: int) -> Patient:
     if patient_id not in Patients:
         raise HTTPException(status_code=404, detail=f"Patient {patient_id} does not exist")
     return Patients[patient_id]
@@ -77,13 +77,16 @@ def attendPatient() -> dict[str, Patient]:
         raise HTTPException(status_code=401, detail="Patients queue is empty")
     patient = PatientsQueue.pop()
     sortQueue()
-    return {"deleted": patient}
+    return {"deleted": patient}  # missing the investigation
+
+
 def sortQueue() -> ():
-    tmp = sorted(PatientsQueue, key= lambda x: compare(x))
+    tmp = sorted(PatientsQueue, key=lambda x: compare(x))
 
 
 def compare(x):
     currentTime = time.time()
     triaVal = x.TriageCategory.value
-    valX = triaVal*20 + (30*triaVal if currentTime >60*60 else (triaVal*10) * (currentTime)//(60*60))# check the math
+    valX = triaVal * 20 + (
+        30 * triaVal if currentTime - TimeStamps.get(x.id) > 60 * 60 else (triaVal * 10) * (currentTime - TimeStamps.get(x.id)) // (60 * 60))  # check the math
     return valX
