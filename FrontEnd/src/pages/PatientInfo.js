@@ -14,6 +14,11 @@ const PatientInfo = () => {
     const [labTests, setLabTests] = useState([]);
     const [symptoms, setSymptoms] = useState('');
     const [submittedSymptoms, setSubmittedSymptoms] = useState('');
+    const [patientRecord, setPatientRecord] = useState({
+        tests: [],
+        notes: [],
+        room: null
+    });
 
     useEffect(() => {
         // Set up WebSocket connection to receive real-time updates
@@ -57,6 +62,21 @@ const PatientInfo = () => {
         fetchLabTests();
     }, [name]);
 
+    useEffect(() => {
+        // Fetch patient record
+        const fetchPatientRecord = async () => {
+            try {
+                const response = await fetch(`http://localhost:3001/api/patient/${name}/record`);
+                const data = await response.json();
+                setPatientRecord(data);
+            } catch (error) {
+                console.error('Error fetching patient record:', error);
+            }
+        };
+
+        fetchPatientRecord();
+    }, [name]);
+
     const handleSymptomSubmit = (e) => {
         e.preventDefault();
         // Simulate sending symptoms to the backend
@@ -83,6 +103,31 @@ const PatientInfo = () => {
                 )}
                 {queueInfo.waitTime && (
                     <p>Estimated Wait Time: {queueInfo.waitTime} minutes</p>
+                )}
+            </div>
+
+            {patientRecord.room && (
+                <div className="room-info">
+                    <h2>Room Assignment</h2>
+                    <p>You have been assigned to Room {patientRecord.room}</p>
+                </div>
+            )}
+
+            <div className="test-results">
+                <h2>Test Results</h2>
+                {patientRecord.tests.length > 0 ? (
+                    <div className="results-list">
+                        {patientRecord.tests.map((test, index) => (
+                            <div key={index} className="test-result-card">
+                                <p>Type: {test.type}</p>
+                                <p>Status: {test.status}</p>
+                                {test.result && <p>Result: {test.result}</p>}
+                                <p>Date: {new Date(test.timestamp).toLocaleString()}</p>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <p>No test results available yet.</p>
                 )}
             </div>
 
