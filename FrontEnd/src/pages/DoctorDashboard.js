@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './Page.css';
 
 const DoctorDashboard = () => {
-    const [doctorQueue, setDoctorQueue] = useState([]);
+    const [awaitingTestResults, setAwaitingTestResults] = useState([]);
     const [selectedPatient, setSelectedPatient] = useState(null);
 
     useEffect(() => {
@@ -11,7 +11,7 @@ const DoctorDashboard = () => {
         socket.onmessage = (event) => {
             const data = JSON.parse(event.data);
             if (data.type === 'DOCTOR_QUEUE_UPDATE') {
-                setDoctorQueue(data.queue);
+                setAwaitingTestResults(data.queue);
             }
         };
 
@@ -25,7 +25,7 @@ const DoctorDashboard = () => {
         try {
             const response = await fetch('http://localhost:3001/api/doctor/queue');
             const data = await response.json();
-            setDoctorQueue(data.queue || []);
+            setAwaitingTestResults(data.queue || []);
         } catch (error) {
             console.error('Error fetching doctor queue:', error);
         }
@@ -85,25 +85,37 @@ const DoctorDashboard = () => {
         }
     };
 
+    const handleRemovePatient = async (patientId) => {
+        try {
+            await fetch(`http://localhost:3001/api/doctor/queue/remove/${patientId}`, {
+                method: 'DELETE'
+            });
+            setAwaitingTestResults(prev => 
+                prev.filter(patient => patient.id !== patientId)
+            );
+        } catch (error) {
+            console.error('Error removing patient:', error);
+        }
+    };
+
     return (
         <div className="page-content">
             <h1>Doctor Dashboard</h1>
 
             <div className="doctor-dashboard-container">
-                {/* Patient Queue Section */}
                 <div className="queue-section">
-                    <h2>Patients Waiting</h2>
+                    <h2>Awaiting Test Results</h2>
                     <div className="patient-list">
-                        {doctorQueue.map((patient) => (
+                        {awaitingTestResults.map((patient) => (
                             <div 
                                 key={patient.id}
                                 className={`patient-card ${selectedPatient?.id === patient.id ? 'selected' : ''}`}
-                                onClick={() => handlePatientSelect(patient)}
+                                onClick={() => setSelectedPatient(patient)}
                             >
                                 <h3>{patient.name}</h3>
                                 <p className="severity">Severity Level: {patient.severityLevel}</p>
                                 <div className="test-results">
-                                    <h4>Lab Test Results:</h4>
+                                    <h4>Lab Tests:</h4>
                                     <ul>
                                         {patient.labTests?.map((test, index) => (
                                             <li key={index}>
@@ -113,10 +125,19 @@ const DoctorDashboard = () => {
                                         ))}
                                     </ul>
                                 </div>
+                                <button 
+                                    className="remove-patient-btn"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleRemovePatient(patient.id);
+                                    }}
+                                >
+                                    Remove Patient
+                                </button>
                             </div>
                         ))}
-                        {doctorQueue.length === 0 && (
-                            <p className="no-patients">No patients waiting</p>
+                        {awaitingTestResults.length === 0 && (
+                            <p className="no-patients">No patients waiting for test results</p>
                         )}
                     </div>
                 </div>
