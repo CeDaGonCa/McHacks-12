@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Common Questions</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        h1, h2 {
+            color: #2a71d0;
+        }
+        .faq-section {
+            margin-bottom: 20px;
+        }
+        .question {
+            background: #f2f2f2;
+            padding: 10px;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            margin-bottom: 5px;
+        }
+        .answer {
+            display: none;
+            padding: 10px;
+            border-left: 3px solid #2a71d0;
+            margin-bottom: 10px;
+            background: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <h1>Common Questions</h1>
+    <p>Find answers to common questions while you wait:</p>
+
+    <!-- FAQ Section 1 -->
+    <div class="faq-section">
+        <h2>Waiting time</h2>
+        <div class="question">How do ER estimated wait times work?</div>
+        <div class="answer">Emergency room wait times can vary and may not always be exact. Patients are seen based on the severity of their injury or illness, with critical cases prioritized first. This ensures those in the most urgent need receive immediate care. Thank you for your understanding and patience.</div>
+        
+        <div class="question">How much time do I have to wait?</div>
+        <div class="answer">You can check your estimated wait time by visiting our website and using your ID to log in. If you feel your symptoms have worsened, please report the changes through the website, and a healthcare professional will reassess your case. Thank you for your cooperation.</div>
+    
+    </div>
+
+<!-- FAQ Section 4 -->
+<div class="faq-section">
+    <h2>Relaxation Techniques</h2>
+    <div class="question">How can I calm down if I feel anxious?</div>
+    <div class="answer">Try deep breathing exercises: inhale slowly for 4 seconds, hold for 4 seconds, and exhale for 4 seconds. Repeat until you feel calmer.</div>
+    
+    <div class="question">Breathing exercises to reduce stress in the ER.</div>
+    <div class="answer">Sit comfortably, close your eyes, and focus on your breath. Count to 4 as you inhale, hold for 4 seconds, and exhale for 4 seconds. Repeat.</div>
+    
+    <div class="question">Simple stretches to relieve physical tension.</div>
+    <div class="answer">Stretch your arms overhead, rotate your shoulders, and gently twist your torso from side to side to relieve tension.</div>
+</div> 
+
+    <!-- FAQ Section 1 -->
+    <div class="faq-section">
+        <h2>About Care and Symptoms</h2>
+        <div class="question">Is there a way to update my symptoms for reassessment?</div>
+        <div class="answer">Yes, you can update your symptoms through the website, and the nurse will be notified of the changes. </div>
+        
+       
+    </div>
+
+    <!-- FAQ Section 2 -->
+    <div class="faq-section">
+       
+        <h2>How to Manage a Wound</h2>
+        <div class="question">What should I do if my wound is bleeding?</div>
+        <div class="answer">Apply gentle pressure to the wound using a clean cloth or bandage for 10-15 minutes. If bleeding persists, seek immediate medical attention.</div>
+        
+        <div class="question">How to clean my wound at home?</div>
+        <div class="answer">Rinse the wound gently with clean water. Use a mild soap to clean the area around the wound. Avoid scrubbing the wound directly.</div>
+        
+        <div class="question">When should I change the dressing?</div>
+        <div class="answer">Change the dressing daily or whenever it becomes wet or dirty. Ensure the wound is clean and dry before applying a new dressing.</div>
+        <div class="question">How do I know if my wound is infected?</div>
+        <div class="answer">Signs of infection include redness, swelling, warmth, pain, or pus discharge. If you notice any of these, consult a healthcare provider.</div>
+        
+        <div class="question">Can I get my wound wet in the shower?</div>
+        <div class="answer">Keep your wound dry while showering. Use a waterproof cover if necessary.</div>
+        
+        <div class="question">What should I do if the wound reopens?</div>
+        <div class="answer">Reapply pressure to stop the bleeding and clean the wound. Seek medical advice if the wound does not close or becomes infected.</div>
+    </div>
+
+    <!-- FAQ Section 3 -->
+    <div class="faq-section">
+        <h2>Dietary Restrictions</h2>
+        <div class="question">Are there foods to avoid when healing from a wound?</div>
+        <div class="answer">Avoid highly processed foods, sugary snacks, and alcohol. Focus on nutrient-rich foods to aid healing.</div>
+        
+        <div class="question">Should I increase my protein intake for faster recovery?</div>
+        <div class="answer">Yes, proteins like lean meats, fish, eggs, and legumes can help repair tissues and speed up recovery.</div>
+        
+        <div class="question">Can I drink alcohol while healing?</div>
+        <div class="answer">It's best to avoid alcohol as it can interfere with wound healing and suppress your immune system.</div>
+    </div>
+
+
+    <script>
+        document.querySelectorAll('.question').forEach(item => {
+            item.addEventListener('click', () => {
+                const answer = item.nextElementSibling;
+                answer.style.display = answer.style.display === 'block' ? 'none' : 'block';
+            });
+        });
+    </script>
+</body>
+</html>
