@@ -21,6 +21,7 @@ const PatientInfo = () => {
         room: null
     });
     const [showEmergencyModal, setShowEmergencyModal] = useState(false);
+    const [totalPatients, setTotalPatients] = useState(0);
 
     useEffect(() => {
         // Set up WebSocket connection to receive real-time updates
@@ -29,6 +30,7 @@ const PatientInfo = () => {
         socket.onmessage = (event) => {
             const data = JSON.parse(event.data);
             setQueueInfo(data);
+            setTotalPatients(data.totalPatients || 10); // fallback to 10 if not provided
         };
 
         // Initial fetch of queue information

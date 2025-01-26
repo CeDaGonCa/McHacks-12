@@ -7,8 +7,8 @@ import Contact from "./pages/Contact";
 import Games from "./pages/Games";
 import PatientInfo from "./pages/PatientInfo";
 import NurseDashboard from "./pages/NurseDashboard";
-import MemoryMatchGame from "./pages/MemoryMatchGame"; // Import the Memory Match Game
-import BreathingExerciseGame from "./pages/BreathingExerciseGame"; // Import the Breathing Exercise Game
+import BreathingGame from './components/games/BreathingGame';
+import MemoryMatch from './components/games/MemoryMatch';
 
 function App() {
   return (
@@ -18,8 +18,8 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/assistance" element={<Assistance />} />
         <Route path="/games" element={<Games />} />
-        <Route path="/games/memory-match" element={<MemoryMatchGame />} /> {/* Route for Memory Match Game */}
-        <Route path="/games/breathing" element={<BreathingExerciseGame />} /> {/* Route for Breathing Exercise Game */}
+        <Route path="/games/breathing" element={<BreathingGame />} />
+        <Route path="/games/memory-match" element={<MemoryMatch />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/patient-info" element={<PatientInfo />} />
         <Route path="/nurse-dashboard" element={<NurseDashboard />} />
